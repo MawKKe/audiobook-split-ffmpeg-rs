@@ -47,10 +47,7 @@ mod tests {
         let res = read_chapters(&parent.join("testdata/beep.m4a")).unwrap();
         assert_eq!(res.chapters.len(), 3);
         assert_eq!(res.chapters[0].id, 0);
-        assert_eq!(
-            res.chapters[0].tags["title"],
-            "It All Started With a Simple BEEP"
-        );
+        assert_eq!(res.chapters[0].tags["title"], "It All Started With a Simple BEEP");
         assert_eq!(res.chapters[1].id, 1);
         assert_eq!(res.chapters[1].tags["title"], "All You Can BEEP Buffee");
         assert_eq!(res.chapters[2].id, 2);
