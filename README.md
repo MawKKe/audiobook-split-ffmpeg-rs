@@ -10,10 +10,10 @@ Similar projects:
 
 - [x] Implement subprocess call (ffprobe)
 - [x] Implement JSON -> Chapters parsing
-- [ ] Implement CLI argument handling
+- [x] Implement CLI argument handling
     - [x] Input file
-    - [ ] Output directory
-    - [ ] Customization options, see audiobook-ffmpeg-split-go
-- [ ] Implement Chapters -> WorkItem conversion
-- [ ] Implement WorkItem + Option -> ffmpeg argument list conversion
+    - [x] Output directory
+    - [x] Customization options, see audiobook-ffmpeg-split-go
+- [x] Implement Chapters -> WorkItem conversion
+- [x] Implement WorkItem + Option -> ffmpeg argument list conversion
 - [ ] Implement subprocess call parallelization
