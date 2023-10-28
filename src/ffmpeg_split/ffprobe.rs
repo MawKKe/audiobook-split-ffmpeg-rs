@@ -1,47 +1,9 @@
-use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::str;
 
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Chapter {
-    pub id: i32,
-    //pub time_base: String,
-    pub start: i32,
-    pub start_time: String,
-    pub end: i32,
-    pub end_time: String,
-    pub tags: HashMap<String, String>,
-}
-
-impl Chapter {
-    fn title(&self) -> Option<&OsStr> {
-        if let Some(v) = self.tags.get("title") {
-            if v == "" {
-                return None;
-            }
-            return Some(&OsStr::new(v));
-        } else {
-            return None;
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct FFProbeOutput {
-    pub chapters: Vec<Chapter>,
-    //pub max_chapter_num: i32,
-}
-
-#[derive(Debug)]
-pub struct WorkItem<'a> {
-    pub input_file: &'a Path,
-    pub output_file: PathBuf,
-    pub chapter: &'a Chapter,
-}
+use crate::ffmpeg_split::model::{Chapter, FFProbeOutput, Opts, WorkItem};
 
 pub fn make_workitem<'a>(input_file: &'a Path, output_dir: &'a Path, opts: &Opts, chap: &'a Chapter) -> WorkItem<'a> {
     return WorkItem {
@@ -62,10 +24,10 @@ impl WorkItem<'_> {
         cmd.arg("-n");
         cmd.args([
             "-metadata",
-            &format!("track={}/{}", self.chapter.id + 1, opts._max_chapter_num + 1),
+            &format!("track={}/{}", self.chapter.id + 1, opts.max_chapter_num + 1),
         ]);
         if let Some(title) = self.chapter.title() {
-            if opts._use_title_in_meta {
+            if opts.use_title_in_meta {
                 cmd.args(["-metadata", &format!("title={}", &title.to_str().unwrap())]);
             }
         }
@@ -95,38 +57,11 @@ pub fn read_chapters(path: &Path, debug: bool) -> serde_json::Result<FFProbeOutp
     return serde_json::from_str(&s);
 }
 
-pub struct Opts<'a> {
-    _use_title_as_name: bool,
-    _use_title_in_meta: bool,
-    _max_chapter_num: usize,
-    _output_extension: Option<&'a OsStr>,
-}
-
-impl Opts<'_> {
-    pub fn new(max_chapter_num: usize) -> Self {
-        return Opts {
-            _use_title_as_name: true,
-            _use_title_in_meta: true,
-            _max_chapter_num: max_chapter_num,
-            _output_extension: None,
-        };
-    }
-
-    pub fn use_title_as_name(&mut self, val: bool) -> &Self {
-        self._use_title_as_name = val;
-        return self;
-    }
-
-    pub fn chapter_id_formatted_width(&mut self) -> usize {
-        return (self._max_chapter_num as f32).log10().ceil() as usize;
-    }
-}
-
 fn compute_outfile(input: &Path, out_dir: &Path, opts: &Opts, chap: &Chapter) -> PathBuf {
     let stem = input.file_stem().unwrap();
     let ext = input.extension().unwrap();
 
-    let name = if opts._use_title_as_name {
+    let name = if opts.use_title_as_name {
         let title = chap.title().unwrap_or(&OsStr::new(""));
         if title == "" {
             println!(
@@ -141,13 +76,13 @@ fn compute_outfile(input: &Path, out_dir: &Path, opts: &Opts, chap: &Chapter) ->
         stem
     };
 
-    let width = opts._max_chapter_num as usize;
+    let width = opts.max_chapter_num as usize;
 
     let new_name = format!(
         "{id:0width$} - {name}.{ext}",
         id = chap.id + 1,
         name = name.to_str().unwrap(),
-        ext = opts._output_extension.unwrap_or(ext).to_str().unwrap(),
+        ext = opts.output_extension.unwrap_or(ext).to_str().unwrap(),
         width = width
     );
     return out_dir.join(new_name);
@@ -155,6 +90,8 @@ fn compute_outfile(input: &Path, out_dir: &Path, opts: &Opts, chap: &Chapter) ->
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use super::*;
 
     #[test]
@@ -186,7 +123,7 @@ mod tests {
         // some of the fields are not really needed...
         let chapter = Chapter {
             id: 0,
-            //time_base: "0".to_string(),
+            time_base: "0".to_string(),
             start: 0,
             start_time: "0".to_string(),
             end: 1,

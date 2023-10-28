@@ -30,6 +30,9 @@ struct Args {
     #[arg(long, help = "Don't use chapter titles in output filenames")]
     no_use_title_as_name: bool,
 
+    #[arg(long, help = "Don't use chapter titles in output filenames")]
+    no_use_title_in_meta: bool,
+
     #[arg(
         long,
         required = false,
@@ -70,9 +73,10 @@ fn main() {
         std::process::exit(-1);
     }
 
-    let mut opts = ffmpeg_split::ffprobe::Opts::new(meta.chapters.iter().max_by_key(|e| e.id).unwrap().id as usize);
-
-    opts.use_title_as_name(!args.no_use_title_as_name);
+    let max_ch_num = meta.chapters.iter().max_by_key(|e| e.id).unwrap().id as usize;
+    let mut opts = ffmpeg_split::model::Opts::new(max_ch_num);
+    opts.set_use_title_as_name(!args.no_use_title_as_name);
+    opts.set_use_title_in_meta(!args.no_use_title_in_meta);
 
     if args.only_show_chapters {
         // compute chaptern number width
@@ -113,12 +117,15 @@ fn main() {
         };
 
         if !output.status.success() {
-            println!("ERROR: {:?}", std::ffi::OsStr::from_bytes(&output.stderr));
+            println!(
+                "ERROR: {}",
+                &std::ffi::OsStr::from_bytes(&output.stderr).to_str().unwrap()
+            );
             std::process::exit(-1);
         }
 
         println!("processed: {:?}", wi.output_file);
     }
 
-    std::process::exit(-1);
+    std::process::exit(0);
 }
